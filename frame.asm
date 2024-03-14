@@ -248,31 +248,6 @@ skip_spaces endp
 ; Returns: ah - number
 ;------------------------------------------------------------------------------
 
-{
-	int x = 1;
-	int y = 0;
-
-	if ( x == 0 )
-	{
-		y = 2;
-	} 
-	else
-	{
-		y = 3;
-	}
-
-	foo();
-}
-
-mov x, 1
-mov y, 0
-cmp x, 0
-jne A
-A: mov y, 2
-jne B
-mov y, 3
-B: foo();
-
 get_number proc
 		call skip_spaces
 		xor ax, ax
@@ -316,7 +291,6 @@ get_address proc
 
 		ret
 get_address endp	
-
 
 ;------------------------------------------------------------------------------
 ; Get a location address of the place where you need to draw
