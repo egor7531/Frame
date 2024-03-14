@@ -1,0 +1,498 @@
+Turbo Assembler	 Version 4.1	    02/29/24 20:26:52	    Page 1
+frame.asm
+
+
+
+      1
+      2	    0000			 .model	tiny
+      3					 .386
+      4
+      5					 ;Consts
+      6					 ;-------------------------------------------------------------------------------------------
+      7					 -
+      8		  =0028			 X					 = 80 /	2
+      9		  =000C			 Y					 = 25 /	2		 ; coordinates of the center
+     10
+     11		  =B800			 VIDEO_MEM_ADDRESS	 = 0b800h
+     12		  =0080			 CMD_ADDRESS			 = 0080h
+     13		  =0020			 SPACE				 = 20h			 ; ' '
+     14		  =0070			 COLOR				 = 70h			 ; background =	gray;		    +
+     15					 color_of_symbol = black
+     16					 ;-------------------------------------------------------------------------------------------
+     17					 -
+     18
+     19	    0000			 .code
+     20					 org 100h
+     21
+     22	    0100  26: 8A 0E 0080	 Start:		 mov cl, es:[CMD_ADDRESS]			 ; es:[CMD_ADDRESS] =	    +
+     23					 command line length
+     24
+     25	    0105  E8 01C7		 Get_Width:	 call get_number
+     26	    0108  88 26	0346r					 mov myWidth, ah
+     27
+     28	    010C  E8 01C0		 Get_Height:	 call get_number
+     29	    010F  88 26	0347r					 mov myHeight, ah
+     30
+     31	    0113  E8 01B9		 Get_Style:	 call get_number
+     32	    0116  88 26	0348r					 mov myStyle, ah
+     33
+     34	    011A  80 3E	0346r 02	 Check_Data: cmp myWidth, 2
+     35	    011F  72 7D	90 90					 jb Print_Error
+     36
+     37	    0123  80 3E	0346r 4E				 cmp myWidth, 78
+     38	    0128  77 74	90 90					 ja Print_Error
+     39
+     40	    012C  80 3E	0347r 02				 cmp myHeight, 2
+     41	    0131  72 6B	90 90					 jb Print_Error
+     42
+     43	    0135  80 3E	0347r 19				 cmp myHeight, 25
+     44	    013A  77 62	90 90					 ja Print_Error
+     45
+     46	    013E  80 3E	0348r 01				 cmp myStyle, 1
+     47	    0143  75 29	90 90					 jne Set_Style_2
+     48
+     49	    0147  C6 06	0340r DA 90				 Set_Style_1:	 mov LEFT_UP,	 0dah		 ; '┌'	    +
+     50					 <----------------------------
+     51	    014D  C6 06	0341r C4 90								 mov HOR_LINE,	 0c4h		 ;  +
+     52					 '─'									       |
+     53	    0153  C6 06	0342r BF 90								 mov RIGHT_UP,	 0bfh		 ;  +
+     54					 '┐'								       | Style 1
+     55	    0159  C6 06	0343r B3 90								 mov VER_LINE,	 0b3h		 ;  +
+     56					 '│'								       |
+     57	    015F  C6 06	0344r D9 90								 mov RIGHT_DOWN, 0d9h		 ;  +
+Turbo Assembler	 Version 4.1	    02/29/24 20:26:52	    Page 2
+frame.asm
+
+
+
+     58					 '┘'								       |
+     59	    0165  C6 06	0345r C0 90								 mov LEFT_DOWN , 0c0h		 ;  +
+     60					 '└'	       <----------------------------
+     61
+     62	    016B  EB 3D	90									 jmp Get_dx
+     63
+     64	    016E  80 3E	0348r 02				 Set_Style_2:	 cmp myStyle, 2
+     65	    0173  75 29	90 90									 jne Print_Error
+     66
+     67	    0177  C6 06	0340r C9 90								 mov LEFT_UP,	 0c9h		 ;  +
+     68					 '╔'	       <----------------------------
+     69	    017D  C6 06	0341r CD 90								 mov HOR_LINE,	 0cdh		 ;  +
+     70					 '═'									       |
+     71	    0183  C6 06	0342r BB 90								 mov RIGHT_UP,	 0bbh		 ;  +
+     72					 '╗'								       | Style 2
+     73	    0189  C6 06	0343r BA 90								 mov VER_LINE,	 0bah		 ;  +
+     74					 '║'								       |
+     75	    018F  C6 06	0344r BC 90								 mov RIGHT_DOWN, 0bch		 ;  +
+     76					 '╝'								       |
+     77	    0195  C6 06	0345r C8 90								 mov LEFT_DOWN,	 0c8h		 ;  +
+     78					 '╚'	       <----------------------------
+     79
+     80	    019B  EB 0D	90									 jmp Get_dx
+     81
+     82	    019E  33 C0			 Print_Error:	 xor ax, ax
+     83	    01A0  B4 09							 mov ah, 09h
+     84	    01A2  BA 0349r						 mov dx, offset	strError
+     85	    01A5  CD 21							 int 21h
+     86
+     87	    01A7  E9 00FB						 jmp Done
+     88
+     89	    01AA  B3 02			 Get_dx:	 mov bl, 2
+     90	    01AC  33 C0						 xor ax, ax
+     91
+     92	    01AE  A0 0346r					 mov al, myWidth
+     93	    01B1  F6 F3						 div bl
+     94	    01B3  32 E4						 xor ah, ah
+     95	    01B5  B6 28						 mov dh, X
+     96	    01B7  2A F0						 sub dh, al
+     97
+     98	    01B9  A0 0347r					 mov al, myHeight
+     99	    01BC  F6 F3						 div bl
+    100	    01BE  32 E4						 xor ah, ah
+    101	    01C0  B2 0C						 mov dl, Y
+    102	    01C2  2A D0						 sub dl, al
+    103
+    104	    01C4  B8 B800		 Frame:		 mov ax, VIDEO_MEM_ADDRESS
+    105	    01C7  8E C0						 mov es, ax
+    106
+    107	    01C9  E8 0123					 call get_address
+    108
+    109	    01CC  B4 70						 mov ah, COLOR
+    110	    01CE  B0 20						 mov al, SPACE
+    111
+    112	    01D0  8A 1E	0347r					 mov bl, myHeight
+    113	    01D4  FE C3						 inc bl
+    114	    01D6  8A 0E	0346r					 mov cl, myWidth
+Turbo Assembler	 Version 4.1	    02/29/24 20:26:52	    Page 3
+frame.asm
+
+
+
+    115	    01DA  FE C1						 inc cl
+    116
+    117	    01DC  BE 0000					 mov si, 0000h
+    118
+    119	    01DF  AB			 Weight:	 stosw
+    120	    01E0  E2 FD						 loop Weight							    +
+    121					 ; while(cx--) {es:[di]	= ax; di += 2;}
+    122
+    123	    01E2  8A 0E	0346r		 Height:	 mov cl, myWidth
+    124	    01E6  FE C1						 inc cl
+    125	    01E8  E8 0120					 call get_location
+    126
+    127	    01EB  46						 inc si
+    128	    01EC  3B F3						 cmp si, bx							    +
+    129					 ; if(si != bx)	Weight;
+    130	    01EE  75 EF						 jne Weight							    +
+    131					 ; else		    Return;
+    132
+    133
+    134	    01F0  E8 012E		 Corners:	 call get_address_corner
+    135	    01F3  A0 0340r					 mov al, LEFT_UP
+    136	    01F6  AB						 stosw
+    137
+    138	    01F7  02 36	0346r					 add dh, myWidth
+    139	    01FB  E8 0123					 call get_address_corner
+    140	    01FE  A0 0342r					 mov al, RIGHT_UP
+    141	    0201  AB						 stosw
+    142
+    143	    0202  2A 36	0346r					 sub dh, myWidth
+    144	    0206  02 16	0347r					 add dl, myHeight
+    145	    020A  E8 0114					 call get_address_corner
+    146	    020D  A0 0345r					 mov al, LEFT_DOWN
+    147	    0210  AB						 stosw
+    148
+    149	    0211  02 36	0346r					 add dh, myWidth
+    150	    0215  E8 0109					 call get_address_corner
+    151	    0218  A0 0344r					 mov al, RIGHT_DOWN
+    152	    021B  AB						 stosw
+    153
+    154	    021C  2A 36	0346r					 sub dh, myWidth
+    155	    0220  80 C6	01					 add dh, 1
+    156	    0223  2A 16	0347r					 sub dl, myHeight
+    157	    0227  E8 00F7					 call get_address_corner
+    158
+    159	    022A  8A 0E	0346r					 mov cl, myWidth
+    160	    022E  80 E9	01					 sub cl, 1
+    161	    0231  A0 0341r					 mov al, HOR_LINE
+    162
+    163	    0234  AB			 Horizontal:	 stosw
+    164
+    165	    0235  B8 00A0					 mov ax, 00a0h
+    166	    0238  8B DA						 mov bx, dx
+    167	    023A  F6 26	0347r					 mul myHeight
+    168	    023E  03 F8						 add di, ax
+    169	    0240  83 EF	02					 sub di, 2
+    170	    0243  8B D3						 mov dx, bx
+    171
+Turbo Assembler	 Version 4.1	    02/29/24 20:26:52	    Page 4
+frame.asm
+
+
+
+    172	    0245  A0 0341r					 mov al, HOR_LINE
+    173	    0248  B4 70						 mov	 ah, COLOR
+    174
+    175	    024A  AB						 stosw
+    176
+    177	    024B  B8 00A0					 mov ax, 00a0h
+    178	    024E  8B DA						 mov bx, dx
+    179	    0250  F6 26	0347r					 mul myHeight
+    180	    0254  2B F8						 sub di, ax
+    181	    0256  8B D3						 mov dx, bx
+    182	    0258  A0 0341r					 mov al, HOR_LINE
+    183	    025B  B4 70						 mov	 ah, COLOR
+    184
+    185	    025D  E2 D5						 loop Horizontal
+    186
+    187	    025F  80 EE	01					 sub dh, 1
+    188	    0262  80 C2	01					 add dl, 1
+    189	    0265  E8 00B9					 call get_address_corner
+    190
+    191	    0268  8A 0E	0347r					 mov cl, myHeight
+    192	    026C  80 E9	01					 sub cl, 1
+    193	    026F  A0 0343r					 mov al, VER_LINE
+    194
+    195	    0272  AB			 Vertical:	 stosw
+    196
+    197	    0273  B8 0002					 mov ax, 0002h
+    198	    0276  F6 26	0346r					 mul myWidth
+    199	    027A  2D 0002					 sub ax, 2
+    200	    027D  03 F8						 add di, ax
+    201	    027F  A0 0343r					 mov al, VER_LINE
+    202	    0282  B4 70						 mov	 ah, COLOR
+    203
+    204	    0284  AB						 stosw
+    205
+    206	    0285  B8 0002					 mov ax, 0002h
+    207	    0288  BB 0050					 mov bx, 0080d
+    208	    028B  2A 1E	0346r					 sub bl, myWidth
+    209	    028F  F7 E3						 mul bx
+    210	    0291  2D 0002					 sub ax, 2
+    211	    0294  03 F8						 add di, ax
+    212	    0296  A0 0343r					 mov al, VER_LINE
+    213	    0299  B4 70						 mov	 ah, COLOR
+    214
+    215	    029B  E2 D5						 loop Vertical
+    216
+    217	    029D  BF 07D0		 Print_Heart:mov di, (Y	* 80 + X) * 2
+    218	    02A0  B4 F4						 mov ah, 0f4h
+    219	    02A2  B0 03						 mov al, 03h
+    220	    02A4  AB						 stosw
+    221
+    222	    02A5  B8 4C00		 Done:		 mov ax, 4c00h								 ;  +
+    223					 return	0
+    224	    02A8  CD 21						 int 21h
+    225
+    226					 ;------------------------------------------------------------------------------
+    227					 ; Get a character from	the command line
+    228					 ; Entry:
+Turbo Assembler	 Version 4.1	    02/29/24 20:26:52	    Page 5
+frame.asm
+
+
+
+    229					 ; Assumes:
+    230					 ; Returns: dl - cod of	a character
+    231					 ;------------------------------------------------------------------------------
+    232
+    233	    02AA			 get_symbol proc
+    234	    02AA  43					 inc bx
+    235	    02AB  26: 8A 97 0080			 mov dl, es:[CMD_ADDRESS] + bx
+    236
+    237	    02B0  80 FA	20				 cmp dl, ' '
+    238	    02B3  74 10	90 90				 je Exit
+    239
+    240	    02B7  80 FA	39				 cmp dl, '9'
+    241	    02BA  0F 87	FEE0				 ja Print_Error
+    242
+    243	    02BE  80 FA	30				 cmp dl, '0'
+    244	    02C1  0F 82	FED9				 jb Print_Error
+    245
+    246	    02C5  C3					 Exit: ret
+    247	    02C6			 get_symbol endp
+    248
+    249					 ;------------------------------------------------------------------------------
+    250					 ; Skip	spaces
+    251					 ; Entry:
+    252					 ; Assumes:
+    253					 ; Returns:
+    254					 ;------------------------------------------------------------------------------
+    255
+    256	    02C6			 skip_spaces proc
+    257	    02C6  E8 FFE1				 Skip_Space:	 call get_symbol
+    258	    02C9  80 FA	20							 cmp dl, SPACE
+    259	    02CC  E1 F8								 loope Skip_Space
+    260
+    261	    02CE  C3					 ret
+    262	    02CF			 skip_spaces endp
+    263
+    264					 ;------------------------------------------------------------------------------
+    265					 ; Get a number	from the command line
+    266					 ; Entry:
+    267					 ; Assumes:
+    268					 ; Returns: ah - number
+    269					 ;------------------------------------------------------------------------------
+    270
+    271	    02CF			 get_number proc
+    272	    02CF  E8 FFF4				 call skip_spaces
+    273	    02D2  33 C0					 xor ax, ax
+    274	    02D4  B0 0A					 A:	 mov al, 10d
+    275	    02D6  80 EA	30					 sub dl, '0'
+    276	    02D9  F6 E4						 mul ah
+    277	    02DB  8A E0						 mov ah, al
+    278	    02DD  02 E2						 add ah, dl
+    279
+    280	    02DF  83 F9	00					 cmp cx, 0
+    281	    02E2  74 0A	90 90					 je Return
+    282	    02E6  E8 FFC1					 call get_symbol
+    283	    02E9  80 FA	20					 cmp dl, SPACE
+    284	    02EC  E0 E6						 loopne	A
+    285
+Turbo Assembler	 Version 4.1	    02/29/24 20:26:52	    Page 6
+frame.asm
+
+
+
+    286	    02EE  C3					 Return: ret
+    287	    02EF			 get_number endp
+    288
+    289					 ;------------------------------------------------------------------------------
+    290					 ; Get the address of the place	where you need to draw
+    291					 ; Entry:	 dh - coordinate of x
+    292					 ;			 dl - coordinate of y
+    293					 ; Assumes:
+    294					 ; Returns: di - value of address
+    295					 ;------------------------------------------------------------------------------
+    296
+    297	    02EF			 get_address proc
+    298	    02EF  B0 50					 mov al, 80d
+    299	    02F1  F6 E2					 mul dl
+    300	    02F3  BB 0000				 mov bx, 0000h
+    301	    02F6  8A DE					 mov bl, dh
+    302	    02F8  03 C3					 add ax, bx
+    303	    02FA  8B F8					 mov di, ax
+    304	    02FC  B8 0002				 mov ax, 2d
+    305	    02FF  8B CA					 mov cx, dx
+    306	    0301  F7 E7					 mul di
+    307	    0303  8B F8					 mov di, ax
+    308
+    309	    0305  8B D1					 mov dx, cx
+    310	    0307  B9 0000				 mov cx, 0000h
+    311
+    312	    030A  C3					 ret
+    313	    030B			 get_address endp
+    314
+    315
+    316					 ;------------------------------------------------------------------------------
+    317					 ; Get a location address of the place where you need to draw
+    318					 ; Entry:	 cl - location
+    319					 ; Assumes:
+    320					 ; Returns: di - value of address
+    321					 ;------------------------------------------------------------------------------
+    322
+    323	    030B			 get_location proc
+    324	    030B  BB 0050				 mov bx, 0080d
+    325	    030E  2A D9					 sub bl, cl
+    326	    0310  B0 02					 mov al, 2d
+    327	    0312  F6 E3					 mul bl
+    328	    0314  03 F8					 add di, ax
+    329
+    330	    0316  8A 1E	0347r				 mov bl, myHeight
+    331	    031A  FE C3					 inc bl
+    332	    031C  B4 70					 mov ah, COLOR
+    333	    031E  B0 20					 mov al, SPACE
+    334
+    335	    0320  C3					 ret
+    336	    0321			 get_location endp
+    337
+    338					 ;------------------------------------------------------------------------------
+    339					 ; Get the address of the corner character
+    340					 ; Entry:	 dh - coordinate of x
+    341					 ;			 dl - coordinate of y
+    342					 ; Assumes:
+Turbo Assembler	 Version 4.1	    02/29/24 20:26:52	    Page 7
+frame.asm
+
+
+
+    343					 ; Returns: di - value of address
+    344					 ;------------------------------------------------------------------------------
+    345
+    346	    0321			 get_address_corner proc
+    347	    0321  B8 0050				 mov ax, 0080d
+    348	    0324  F6 E2					 mul dl
+    349	    0326  BB 0000				 mov bx, 0000h
+    350	    0329  8A DE					 mov bl, dh
+    351	    032B  03 C3					 add ax, bx
+    352	    032D  8B F8					 mov di, ax
+    353	    032F  B8 0002				 mov ax, 0002d
+    354	    0332  8B CA					 mov cx, dx
+    355	    0334  F7 E7					 mul di
+    356	    0336  8B F8					 mov di, ax
+    357
+    358	    0338  8B D1					 mov dx, cx
+    359	    033A  B9 0000				 mov cx, 0000h
+    360	    033D  B4 70					 mov ah, COLOR
+    361
+    362	    033F  C3					 ret
+    363	    0340			 get_address_corner endp
+    364
+    365					 ;Variables
+    366					 ;-------------------------------------------------------------------------------------------
+    367					 -
+    368	    0340  00			 LEFT_UP     db		 00h
+    369	    0341  00			 HOR_LINE    db		 00h
+    370	    0342  00			 RIGHT_UP    db		 00h
+    371	    0343  00			 VER_LINE    db		 00h
+    372	    0344  00			 RIGHT_DOWN  db		 00h
+    373	    0345  00			 LEFT_DOWN   db		 00h
+    374
+    375	    0346  00			 myWidth	 db		 00h
+    376	    0347  00			 myHeight	 db		 00h
+    377	    0348  00			 myStyle	 db		 00h
+    378
+    379	    0349  44 61	74 61 20 65 72+	 strError	 db		 "Data error$"
+    380		  72 6F	72 24
+    381					 ;-------------------------------------------------------------------------------------------
+    382					 -
+    383
+    384					 end	 Start
+Turbo Assembler	 Version 4.1	    02/29/24 20:26:52	    Page 8
+Symbol Table
+
+
+
+
+Symbol Name			  Type	 Value
+
+??DATE				  Text	 "02/29/24"
+??FILENAME			  Text	 "frame	  "
+??TIME				  Text	 "20:26:52"
+??VERSION			  Number 040A
+@32BIT				  Text	 0
+@CODE				  Text	 DGROUP
+@CODESIZE			  Text	 0
+@CPU				  Text	 0F0FH
+@CURSEG				  Text	 _TEXT
+@DATA				  Text	 DGROUP
+@DATASIZE			  Text	 0
+@FILENAME			  Text	 FRAME
+@INTERFACE			  Text	 000H
+@MODEL				  Text	 1
+@STACK				  Text	 DGROUP
+@WORDSIZE			  Text	 2
+A				  Near	 DGROUP:02D4
+CHECK_DATA			  Near	 DGROUP:011A
+CMD_ADDRESS			  Number 0080
+COLOR				  Number 0070
+CORNERS				  Near	 DGROUP:01F0
+DONE				  Near	 DGROUP:02A5
+EXIT				  Near	 DGROUP:02C5
+FRAME				  Near	 DGROUP:01C4
+GET_ADDRESS			  Near	 DGROUP:02EF
+GET_ADDRESS_CORNER		  Near	 DGROUP:0321
+GET_DX				  Near	 DGROUP:01AA
+GET_HEIGHT			  Near	 DGROUP:010C
+GET_LOCATION			  Near	 DGROUP:030B
+GET_NUMBER			  Near	 DGROUP:02CF
+GET_STYLE			  Near	 DGROUP:0113
+GET_SYMBOL			  Near	 DGROUP:02AA
+GET_WIDTH			  Near	 DGROUP:0105
+HEIGHT				  Near	 DGROUP:01E2
+HORIZONTAL			  Near	 DGROUP:0234
+HOR_LINE			  Byte	 DGROUP:0341
+LEFT_DOWN			  Byte	 DGROUP:0345
+LEFT_UP				  Byte	 DGROUP:0340
+MYHEIGHT			  Byte	 DGROUP:0347
+MYSTYLE				  Byte	 DGROUP:0348
+MYWIDTH				  Byte	 DGROUP:0346
+PRINT_ERROR			  Near	 DGROUP:019E
+PRINT_HEART			  Near	 DGROUP:029D
+RETURN				  Near	 DGROUP:02EE
+RIGHT_DOWN			  Byte	 DGROUP:0344
+RIGHT_UP			  Byte	 DGROUP:0342
+SET_STYLE_1			  Near	 DGROUP:0147
+SET_STYLE_2			  Near	 DGROUP:016E
+SKIP_SPACE			  Near	 DGROUP:02C6
+SKIP_SPACES			  Near	 DGROUP:02C6
+SPACE				  Number 0020
+START				  Near	 DGROUP:0100
+STRERROR			  Byte	 DGROUP:0349
+VERTICAL			  Near	 DGROUP:0272
+Turbo Assembler	 Version 4.1	    02/29/24 20:26:52	    Page 9
+Symbol Table
+
+
+
+VER_LINE			  Byte	 DGROUP:0343
+VIDEO_MEM_ADDRESS		  Number B800
+WEIGHT				  Near	 DGROUP:01DF
+X				  Number 0028
+Y				  Number 000C
+
+Groups & Segments		  Bit Size Align  Combine Class
+
+DGROUP				  Group
+  _DATA				  16  0000 Word	  Public  DATA
+  _TEXT				  16  0354 Word	  Public  CODE
+
